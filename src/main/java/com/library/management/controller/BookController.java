@@ -51,4 +51,9 @@ public class BookController {
     public ResponseEntity<String> deleteById(@PathVariable Long id) {
         return ResponseEntity.ok("Book deleted succesfully with given id: " + id);
     }
+
+    @GetMapping("/getAll")
+    public ResponseEntity<List<BookDto>> getAll() {
+        return ResponseEntity.ok(bookService.getAll());
+    }
 }

@@ -1,26 +1,33 @@
 package com.library.management.config;
 
+import com.library.management.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import javax.sql.DataSource;
+import java.util.Arrays;
 
 @Configuration
 public class SecurityConfig {
-    @Bean
-    public UserDetailsService userDetailsService(DataSource dataSource) {
-        return new JdbcUserDetailsManager(dataSource);
+
+    private final CustomUserDetailsService userDetailsService;
+
+    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
     }
 
     @Bean
@@ -29,60 +36,49 @@ public class SecurityConfig {
     }
 
     @Bean
-    protected SecurityFilterChain configure(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable);
-        http.httpBasic(Customizer.withDefaults());
-        http.authorizeHttpRequests(a -> a
-                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
-                        .anyRequest().authenticated())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(Customizer.withDefaults())
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/h2-console/**", "/**").permitAll() // logout endpoint'i izin verilenler listesinde
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .logout(logout -> logout
+                        .logoutUrl("/api/logout")
+                        .logoutSuccessUrl("/login")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll());
+
         return http.build();
     }
+
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        AuthenticationManagerBuilder authenticationManagerBuilder =
+                http.getSharedObject(AuthenticationManagerBuilder.class);
+        authenticationManagerBuilder.userDetailsService(userDetailsService)
+                .passwordEncoder(passwordEncoder());
+        return authenticationManagerBuilder.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001"));
+        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
+    @Bean
+    public LogoutSuccessHandler logoutSuccessHandler() {
+        return new SimpleUrlLogoutSuccessHandler();
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-//    private final AppAuthenticationProvider appAuthenticationProvider;
-//    public SecurityConfig(AppAuthenticationProvider appAuthenticationProvider) {
-//        this.appAuthenticationProvider = appAuthenticationProvider;
-//    }
-//    @Bean
-//    SecurityFilterChain configureSecurityFilterChain(HttpSecurity http) throws Exception {
-//
-//        http.httpBasic(Customizer.withDefaults());
-//        http.authorizeHttpRequests(request -> request.requestMatchers(toH2Console()).permitAll());
-//        return http.build();
-//        http.httpBasic(Customizer.withDefaults());
-//        http.authenticationProvider(appAuthenticationProvider);
-//        http.authorizeHttpRequests(request -> request.anyRequest().permitAll());
-//        http.authorizeHttpRequests(request -> request.requestMatchers(request1 -> request1.))
-//        return http.build();
-//        http.csrf(csrf -> csrf.
-//                ignoringRequestMatchers(toH2Console()).disable())
-//                .authorizeHttpRequests(auth -> auth.requestMatchers(toH2Console()).permitAll())
-//                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-//                .authenticationProvider(appAuthenticationProvider);
-//        return http.build();
-//    }
-
-
-//    @Bean
-//    UserDetailsService userDetailsService(){
-//        UserDetails user = User.withUsername("ferhat").password("123").authorities("read").build();
-//        return new InMemoryUserDetailsManager(user);
-//    }
-//
-//    @Bean
-//    public PasswordEncoder passwordEncoder(){
-//        return NoOpPasswordEncoder.getInstance();
-//    }
-

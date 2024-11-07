@@ -1,6 +1,7 @@
 package com.library.management.controller;
 
 import com.library.management.contracts.request.LoanRequest;
+import com.library.management.contracts.request.NonExistingBookLoanRequest;
 import com.library.management.model.dto.LoanDto;
 import com.library.management.service.LoanService;
 import jakarta.validation.Valid;
@@ -43,5 +44,11 @@ public class LoanController {
     public ResponseEntity<Boolean> updateReturnDate(@Valid @RequestBody LoanRequest loanRequest){
         return ResponseEntity.ok(loanService.updateReturnDate(loanRequest));
     }
+
+    @PostMapping("/saveBookAndLoan")
+    public ResponseEntity<LoanDto> saveBookAndLoan(@Valid @RequestBody NonExistingBookLoanRequest nonExistingBookLoanRequest){
+        return ResponseEntity.ok(loanService.saveNonExistingBookAndLoan(nonExistingBookLoanRequest));
+    }
+
 
 }

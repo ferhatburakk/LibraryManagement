@@ -2,10 +2,12 @@ package com.library.management.service;
 
 import com.library.management.mapper.BookMapper;
 import com.library.management.model.dto.BookDto;
+import com.library.management.model.entity.Book;
 import com.library.management.repository.BookRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class BookService {
@@ -25,7 +27,8 @@ public class BookService {
     }
 
     public BookDto getByIsbn(String isbn) {
-        return BookMapper.toBookDto(bookRepository.findByIsbn(isbn).orElseThrow(() -> new RuntimeException("Book not found with given Isbn.")));
+        Optional<Book> book = bookRepository.findByIsbn(isbn);
+        return book.map(BookMapper::toBookDto).orElse(null);
     }
 
     public BookDto getByTitle(String title) {
@@ -48,4 +51,7 @@ public class BookService {
         bookRepository.deleteById(id);
     }
 
+    public List<BookDto> getAll() {
+        return BookMapper.toBookDtoList(bookRepository.findAll());
+    }
 }

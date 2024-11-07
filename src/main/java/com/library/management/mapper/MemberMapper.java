@@ -16,6 +16,8 @@ public class MemberMapper {
         memberDto.setName(member.getName());
         memberDto.setEmail(member.getEmail());
         memberDto.setId(member.getId());
+        memberDto.setPassword(member.getPassword());
+        memberDto.setRole(member.getRole());
         return memberDto;
     }
 
@@ -24,6 +26,8 @@ public class MemberMapper {
         member.setName(memberDto.getName());
         member.setEmail(memberDto.getEmail());
         member.setId(memberDto.getId());
+        member.setPassword(memberDto.getPassword());
+        member.setRole(memberDto.getRole());
         return member;
     }
 

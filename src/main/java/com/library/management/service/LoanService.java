@@ -1,6 +1,7 @@
 package com.library.management.service;
 
 import com.library.management.contracts.request.LoanRequest;
+import com.library.management.contracts.request.NonExistingBookLoanRequest;
 import com.library.management.mapper.BookMapper;
 import com.library.management.mapper.LoanMapper;
 import com.library.management.mapper.MemberMapper;
@@ -93,5 +94,28 @@ public class LoanService {
             return true;
         }
         return false;
+    }
+
+    public LoanDto saveNonExistingBookAndLoan(NonExistingBookLoanRequest nonExistingBookLoanRequest) {
+        LoanDto loanDto = new LoanDto();
+        BookDto bookDto = nonExistingBookLoanRequest.getBookDto();
+        bookDto.setAvailable(false);
+        MemberDto memberDto = memberService.getByEmail(nonExistingBookLoanRequest.getEmail());
+
+        if (bookService.getByIsbn(bookDto.getIsbn()) == null) {
+            bookService.save(bookDto);
+            loanDto.setMemberDto(memberDto);
+            loanDto.setBookDto(bookDto);
+            loanDto.setLoanDate(LocalDate.now());
+            loanDto.setReturnDate(null);
+            save(loanDto);
+        } else {
+            loanDto.setMemberDto(memberDto);
+            loanDto.setBookDto(bookDto);
+            loanDto.setLoanDate(LocalDate.now());
+            loanDto.setReturnDate(null);
+            save(loanDto);
+        }
+        return loanDto;
     }
 }
